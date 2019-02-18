@@ -66,6 +66,9 @@ func main() {
 		
 		// レスポンスボディを返す
 		conn.Write(append(headerBuf, buf...))
+
+		// ヘッダとボディを分けないとブラウザに怒られる
+		// どうやらhttp/0.9の仕様らしい
 	}
 	
 	// listen.Close()
