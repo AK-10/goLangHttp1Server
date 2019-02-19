@@ -27,6 +27,13 @@ func main() {
 			log.Fatal("can not established connection")
 		}
 		println("connection established\n")
+		
+		// inputBuf := make([]byte, 1024)
+		// n, err := conn.Read(inputBuf)
+		// if err != nil {
+		// 	log.Fatal("can not read request")
+		// }
+
 
 		documentRoot := "./views/"
 		index := "index.html"
