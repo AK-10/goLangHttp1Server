@@ -11,7 +11,7 @@ Go言語でhttp/1.1に対応したwebサーバを実装する
 ## 完了
 - getメソッドの対応
 
-未実装
+## 未実装
 - 多分複数のリクエストを捌けない(goroutine 使えば良い？)
 - post, put, delete
 - cookie
