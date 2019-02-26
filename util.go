@@ -39,6 +39,7 @@ func getResponseItem(method string, reqPath string) ([]byte, int, string) {
 		statusCode = 200
 		message = "OK"
 	default:
+		// ここで謎のエラーハンドル
 		path = path + "/errors/404.html"
 		statusCode = 404
 		message = "Not Found"
