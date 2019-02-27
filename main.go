@@ -5,7 +5,7 @@ import (
 	"net"
 	"fmt"
 	"strings"
-	"strconv"
+	"./response"
 )
 
 func main() {
@@ -38,24 +38,28 @@ func main() {
 			requestLines := readLines(reqBuf)
 			method, reqPath := strings.Split(requestLines[0], " ")[0], strings.Split(requestLines[0], " ")[1]
 
-			buf, status, msg := getResponseItem(method, reqPath)
-
+			buf, status, msg, loc := getResponseItem(method, reqPath)
+			if status == 301 {
+				buf = nil
+			}
 			// レスポンスヘッダを返す処理
 			// (...)演算子は可変長引数に対し、可変長構造体を与える時につける
-			headerBuf := make([]byte, 0)
-			fstLine := "HTTP/1.1 " + strconv.Itoa(status) + " " + msg + "\r\n"
-			headerBuf = append(headerBuf, []byte(fstLine)...)
-			// 2006年1月2日15時4分5秒 フォーマットの例文
-			headerBuf = append(headerBuf, []byte("Date: "+ getUTCTime())...)
-			// headerBuf = append(headerBuf, []byte("Date: "+ time.Now().Format("Tue, 30 Jul 2013 17:47:09 GMT\n"))...)
-			headerBuf = append(headerBuf, []byte("Server: GolangServer\r\n")...)
-			headerBuf = append(headerBuf, []byte("Connection: close\r\n")...)
-			headerBuf = append(headerBuf, []byte("Content-Type: text/html\r\n")...)
-			headerBuf = append(headerBuf, []byte("\r\n")...)
+
+			header := response.MakeResponseHeader(status, msg, getUTCTime(), loc)
+			// headerBuf := make([]byte, 0)
+			// fstLine := "HTTP/1.1 " + strconv.Itoa(status) + " " + msg + "\r\n"
+			// headerBuf = append(headerBuf, []byte(fstLine)...)
+			// // 2006年1月2日15時4分5秒 フォーマットの例文
+			// headerBuf = append(headerBuf, []byte("Date: "+ getUTCTime())...)
+			// // headerBuf = append(headerBuf, []byte("Date: "+ time.Now().Format("Tue, 30 Jul 2013 17:47:09 GMT\n"))...)
+			// headerBuf = append(headerBuf, []byte("Server: GolangServer\r\n")...)
+			// headerBuf = append(headerBuf, []byte("Connection: close\r\n")...)
+			// headerBuf = append(headerBuf, []byte("Content-Type: text/html\r\n")...)
+			// headerBuf = append(headerBuf, []byte("\r\n")...)
 			
 			// レスポンスボディを返す
-			conn.Write(append(headerBuf, buf...))
-
+			conn.Write(append(header, buf...))
+			conn.Close()
 			// ヘッダとボディを分けないとブラウザに怒られる
 			// どうやらhttp/0.9の仕様らしい
 		} ()

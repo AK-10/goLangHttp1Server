@@ -21,19 +21,21 @@ func readLines(bytes []byte) []string {
 }
 
 func getUTCTime() string {
-	return time.Now().Format("Mon, 2 Jan 2006 15:04:05 GMT\r\n")
+	return time.Now().Format("Mon, 2 Jan 2006 15:04:05 GMT")
 }
 
-// return values are body, status, msg
-func getResponseItem(method string, reqPath string) ([]byte, int, string) {
+// return values are body, status, msg, string
+func getResponseItem(method string, reqPath string) ([]byte, int, string, string) {
 	path := "./views"
 	var statusCode int
 	var message string
+	var location string
 	switch {
 	case method == "GET" && reqPath == "/":
 		path = path + "/root.html"
-		statusCode = 200
-		message = "OK"
+		statusCode = 301
+		message = "Moved Permanently"
+		location = "http://localhost:8080/index"
 	case method == "GET" && reqPath == "/index":
 		path = path + "/index.html"
 		statusCode = 200
@@ -57,5 +59,5 @@ func getResponseItem(method string, reqPath string) ([]byte, int, string) {
 		log.Fatal("error was occured in reading file")
 	}
 
-	return buf, statusCode, message
+	return buf, statusCode, message, location
 }
