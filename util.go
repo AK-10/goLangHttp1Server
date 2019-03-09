@@ -10,16 +10,6 @@ import (
 	"strings"
 )
 
-contentTypeMap := map[string]string{
-	"html": "text/html",
-	"htm": "text/html",
-	"txt": "text/plain",
-	"css": "text/css",
-	"png": "image/png",
-	"jpg": "image/jpeg",
-	"jpeg": "image/jpeg",
-	"gif": "image/gif",
-}
 
 func readLines(bytes []byte) []string {
 	strSlice := make([]string, 0)

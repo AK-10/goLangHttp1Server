@@ -5,22 +5,22 @@ import (
 	"net"
 	"fmt"
 	"strings"
-	"./response"
+	"./akhttp"
 )
 
 func main() {
 	port := ":8080"
 
-	contentTypeMap := map[string]string{
-		"html": "text/html",
-		"htm": "text/html",
-		"txt": "text/plain",
-		"css": "text/css",
-		"png": "image/png",
-		"jpg": "image/jpeg",
-		"jpeg": "image/jpeg",
-		"gif": "image/gif",
-	}
+	// contentTypeMap := map[string]string{
+	// 	"html": "text/html",
+	// 	"htm": "text/html",
+	// 	"txt": "text/plain",
+	// 	"css": "text/css",
+	// 	"png": "image/png",
+	// 	"jpg": "image/jpeg",
+	// 	"jpeg": "image/jpeg",
+	// 	"gif": "image/gif",
+	// }
 
 	// ポート解放
 	listen, err := net.Listen("tcp", port)
@@ -36,6 +36,8 @@ func main() {
 			log.Fatal("can not established connection")
 		}
 		go func() {
+			// コネクションが二回飛んでくるのは, htmlとfaviconを取得しようとするため
+			// もし, javascript等の読み込みがあるなら, さらに増える
 			println("connection established\n")
 
 			// リクエストを読み込む
@@ -43,6 +45,7 @@ func main() {
 			_, err = conn.Read(reqBuf)
 			if err != nil {
 				// 400を返す処理
+				fmt.Println(reqBuf)
 				fmt.Println(err)
 				log.Fatal("can not read request header")
 			}
@@ -58,7 +61,7 @@ func main() {
 			// レスポンスヘッダを返す処理
 			// (...)演算子は可変長引数に対し、可変長構造体を与える時につける
 
-			header := response.MakeResponseHeader(status, msg, getUTCTime(), loc)
+			header := akhttp.MakeResponseHeader(status, msg, getUTCTime(), loc)
 			conn.Write(append(header, buf...))
 			conn.Close()
 		} ()

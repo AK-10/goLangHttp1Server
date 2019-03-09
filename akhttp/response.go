@@ -1,8 +1,15 @@
-package response
+package akhttp
 
 import (
 	"strconv"
 )
+
+type response struct {
+	protocol string
+	status int
+	message string
+	others map[string]string
+}
 
 func MakeResponseHeader(status int, message string, time string, location string) []byte {
 	buf := make([]byte, 0)
