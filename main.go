@@ -49,9 +49,14 @@ func main() {
 				fmt.Println(err)
 				log.Fatal("can not read request header")
 			}
+
+			req := akhttp.MakeRequest(reqBuf)
+
+			
 			// fmt.Println(reqBuf)
 			// リクエストをbyteからstringに変換
 			requestLines := readLines(reqBuf)
+			println(requestLines)
 			method, reqPath := strings.Split(requestLines[0], " ")[0], strings.Split(requestLines[0], " ")[1]
 
 			buf, status, msg, loc := getResponseItem(method, reqPath)
