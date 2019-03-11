@@ -38,11 +38,10 @@ func main() {
 				log.Fatal("can not read request header")
 			}
 			
-			req := akhttp.MakeRequest(reqBuf) // error
+			req := akhttp.MakeRequest(reqBuf)
 			res := akhttp.MakeResponse(req)
 			resBuf := res.ToByteArray()
-			
-			// conn.Write(append(header, res...))
+
 			conn.Write(resBuf)
 			conn.Close()
 		} ()
