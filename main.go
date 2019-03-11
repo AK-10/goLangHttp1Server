@@ -4,23 +4,11 @@ import (
 	"log"
 	"net"
 	"fmt"
-	"strings"
 	"./akhttp"
 )
 
 func main() {
 	port := ":8080"
-
-	// contentTypeMap := map[string]string{
-	// 	"html": "text/html",
-	// 	"htm": "text/html",
-	// 	"txt": "text/plain",
-	// 	"css": "text/css",
-	// 	"png": "image/png",
-	// 	"jpg": "image/jpeg",
-	// 	"jpeg": "image/jpeg",
-	// 	"gif": "image/gif",
-	// }
 
 	// ポート解放
 	listen, err := net.Listen("tcp", port)
@@ -49,25 +37,13 @@ func main() {
 				fmt.Println(err)
 				log.Fatal("can not read request header")
 			}
-
-			req := akhttp.MakeRequest(reqBuf)
-
 			
-			// fmt.Println(reqBuf)
-			// リクエストをbyteからstringに変換
-			requestLines := readLines(reqBuf)
-			println(requestLines)
-			method, reqPath := strings.Split(requestLines[0], " ")[0], strings.Split(requestLines[0], " ")[1]
-
-			buf, status, msg, loc := getResponseItem(method, reqPath)
-			if status == 301 {
-				buf = nil
-			}
-			// レスポンスヘッダを返す処理
-			// (...)演算子は可変長引数に対し、可変長構造体を与える時につける
-
-			header := akhttp.MakeResponseHeader(status, msg, getUTCTime(), loc)
-			conn.Write(append(header, buf...))
+			req := akhttp.MakeRequest(reqBuf) // error
+			res := akhttp.MakeResponse(req)
+			resBuf := res.ToByteArray()
+			
+			// conn.Write(append(header, res...))
+			conn.Write(resBuf)
 			conn.Close()
 		} ()
 	}
