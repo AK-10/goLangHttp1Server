@@ -33,7 +33,7 @@ func main() {
 			_, err = conn.Read(reqBuf)
 			if err != nil {
 				// 400を返す処理
-				fmt.Println(reqBuf)
+				// fmt.Println(reqBuf)
 				fmt.Println(err)
 				log.Fatal("can not read request header")
 			}

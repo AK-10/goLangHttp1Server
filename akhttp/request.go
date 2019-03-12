@@ -16,6 +16,7 @@ type Request struct {
 
 func MakeRequest(buf []byte) Request {
 	requestLines := readLines(buf)
+	
 	requestFstLine := strings.Split(requestLines[0], " ")
 	method := requestFstLine[0]
 	protocol := requestFstLine[2]
@@ -42,7 +43,7 @@ func MakeRequest(buf []byte) Request {
 	
 	return Request{
 		path: reqPath, 
-		method: method, 
+		method: method,
 		protocol: protocol,
 		field: field,
 		query: query,
