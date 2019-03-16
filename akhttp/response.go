@@ -23,7 +23,8 @@ type Response struct {
 func MakeResponse(req Request) Response {
 	documentDir, _ := filepath.Abs("./views")
 	path := requestHandleMap(req.path)
-	absPath, err := filepath.Abs(documentDir + *path)
+	println(path)
+	absPath, err := filepath.Abs(documentDir + path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -98,13 +99,13 @@ func getExtension(path string) string {
 
 
 // 返す値をここに定義
-func requestHandleMap(path string) *string {
+func requestHandleMap(path string) string {
 	switch path {
 	case "/index":
 		html := "/index.html"
-		return &html
+		return html
 	default:
-		return nil
+		return ""
 	}
 }
 
