@@ -4,8 +4,7 @@ import (
 	"log"
 	"net"
 	"fmt"
-	"strings"
-	"./response"
+	"./akhttp"
 )
 
 func main() {
@@ -25,33 +24,28 @@ func main() {
 			log.Fatal("can not established connection")
 		}
 		go func() {
+			// コネクションが二回飛んでくるのは, htmlとfaviconを取得しようとするため
+			// もし, javascript等の読み込みがあるなら, さらに増える
 			println("connection established\n")
-			
+
 			// リクエストを読み込む
 			reqBuf := make([]byte, 1024)
 			_, err = conn.Read(reqBuf)
 			if err != nil {
+				// 400を返す処理
+				// fmt.Println(reqBuf)
+				fmt.Println(err)
 				log.Fatal("can not read request header")
 			}
-			// fmt.Println(reqBuf)
-			// リクエストをbyteからstringに変換
-			requestLines := readLines(reqBuf)
-			method, reqPath := strings.Split(requestLines[0], " ")[0], strings.Split(requestLines[0], " ")[1]
+			
+			req := akhttp.MakeRequest(reqBuf)
+			res := akhttp.MakeResponse(req)
+			resBuf := res.ToByteArray()
 
-			buf, status, msg, loc := getResponseItem(method, reqPath)
-			if status == 301 {
-				buf = nil
-			}
-			// レスポンスヘッダを返す処理
-			// (...)演算子は可変長引数に対し、可変長構造体を与える時につける
-
-			header := response.MakeResponseHeader(status, msg, getUTCTime(), loc)
-			conn.Write(append(header, buf...))
+			conn.Write(resBuf)
 			conn.Close()
-			// ヘッダとボディを分けないとブラウザに怒られる
-			// どうやらhttp/0.9の仕様らしい
 		} ()
 	}
-	
+
 	// listen.Close()
 }
