@@ -29,7 +29,7 @@ func main() {
 			println("connection established\n")
 
 			// リクエストを読み込む
-			reqBuf := make([]byte, 1024)
+			reqBuf := make([]byte, 4096)
 			_, err = conn.Read(reqBuf)
 			if err != nil {
 				// 400を返す処理
@@ -38,10 +38,15 @@ func main() {
 				log.Fatal("can not read request header")
 			}
 			
+			println(string(reqBuf))
+
+			println(reqBuf)
+			
 			req := akhttp.MakeRequest(reqBuf)
 			res := akhttp.MakeResponse(req)
 			resBuf := res.ToByteArray()
 
+			// println(string(resBuf))
 			conn.Write(resBuf)
 			conn.Close()
 		} ()

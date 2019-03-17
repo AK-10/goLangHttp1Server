@@ -60,8 +60,6 @@ func MakeResponse(req Request) Response {
 	// locationはpath次第
 	// bodyは読み取ったファイルのstring <- 実はbyteで良いかも
 	// contentTypeはファイルの拡張子から
-
-	println(body)
 	return Response{
 		protocol: req.protocol,
 		status: 200,
@@ -87,7 +85,7 @@ func (res *Response) ToByteArray() []byte {
 	}
 
 	buf = append(buf, []byte("\r\n")...)
-	println(string(res.body))
+	// println(string(res.body))
 	buf = append(buf, res.body...)
 
 	return buf
@@ -104,6 +102,9 @@ func requestHandleMap(path string) string {
 	case "/index":
 		html := "/index.html"
 		return html
+	case "/form":
+		html := "/form.html"
+		return html
 	default:
 		return ""
 	}
@@ -111,14 +112,14 @@ func requestHandleMap(path string) string {
 
 func getContentType(ext string) string {
 	contentTypeMap := map[string]string{
-		"html": "text/html",
-		"htm": "text/html",
-		"txt": "text/plain",
-		"css": "text/css",
-		"png": "image/png",
-		"jpg": "image/jpeg",
-		"jpeg": "image/jpeg",
-		"gif": "image/gif",
+		".html": "text/html",
+		".htm": "text/html",
+		".txt": "text/plain",
+		".css": "text/css",
+		".png": "image/png",
+		".jpg": "image/jpeg",
+		".jpeg": "image/jpeg",
+		".gif": "image/gif",
 	}
 
 	ret := contentTypeMap[strings.ToLower(ext)]
