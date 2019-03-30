@@ -50,6 +50,10 @@ func MakeRequest(buf []byte) Request {
 	}
 }
 
+func ParseRequest([]byte) interface{} {
+	// 10が"\n", 0がnil
+}
+
 
 func readLines(bytes []byte) []string {
 	strSlice := make([]string, 0)
