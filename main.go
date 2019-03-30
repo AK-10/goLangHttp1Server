@@ -1,25 +1,14 @@
 package main
 
 import (
-	"log"
-	"net"
-	"fmt"
+	"./service"
 	// "./akhttp"
 )
 
 func main() {
 	port := 8080
-	listen, err := net.Listen("tcp", ":" + string(port))
-	if err != nil {
-		log.Fatal("can not listen at ", port)
-	}
-	for {
-		conn, err := listen.Accept()
-		if err != nil {
-			log.Fatal("cant not established connection.")
-		}
-		fmt.Println("listening ", port)
-	}
+	s := service.NewService()
+	s.Start(port)
 }
 
 // func main() {
