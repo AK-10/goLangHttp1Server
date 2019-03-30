@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"fmt"
+	"errors"
 )
 
 type Messages []*myutil.Message
@@ -21,7 +22,7 @@ type Service struct {
 }
 
 
-func NewService() *Service {
+func New() *Service {
 	return &Service{
 		msgs: Messages{},
 		handles: []*Handle{},
@@ -35,7 +36,6 @@ func (s *Service) Get(path string, process func(interface{}, interface{})) {
 		process: process,
 	}
 	s.handles = append(s.handles, h)
-
 }
 
 func (s *Service) Post(path string, process func(interface{}, interface{})) {
@@ -55,7 +55,8 @@ func (s *Service) InternalServerError() interface{} {
 	return nil
 }
 
-func (s *Service) handling(req interface{}, res interface{}) interface{} {
+
+func (s *Service) handling(req interface{}, res interface{}) error {
 	// parse request byte array
 
 	// 
@@ -69,9 +70,9 @@ func (s *Service) handling(req interface{}, res interface{}) interface{} {
 		}
 	}
 	if !flag {
-		return s.NotFound()
+		return errors.New("no handle")
 	}
-		return res // res.tobyte
+	return nil
 }
 
 func (s *Service) Start(port int) {
@@ -96,8 +97,11 @@ func (s *Service) Start(port int) {
 				s.InternalServerError()
 			}
 			// ここでrequestとresponseとなるインスタンスを生成．
-
-			s.handling(req, res)
+			
+			err = s.handling(req, res) // ここでのerrはnot foundであるということ
+			if err != nil {
+				s.NotFound()
+			}
 			conn.Close()
 		} ()
 	}

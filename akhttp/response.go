@@ -10,7 +10,7 @@ import (
 	"os"
 )
 
-type Response struct {
+type AKResponse struct {
 	protocol string
 	status int
 	message string
@@ -20,7 +20,7 @@ type Response struct {
 }
 
 
-func MakeResponse(req Request) Response {
+func NewResponse() *AKResponse {
 	documentDir, _ := filepath.Abs("./views")
 	path := requestHandleMap(req.path)
 	println(path)
@@ -60,7 +60,7 @@ func MakeResponse(req Request) Response {
 	// locationはpath次第
 	// bodyは読み取ったファイルのstring <- 実はbyteで良いかも
 	// contentTypeはファイルの拡張子から
-	return Response{
+	return &Response{
 		protocol: req.protocol,
 		status: 200,
 		message: "OK",

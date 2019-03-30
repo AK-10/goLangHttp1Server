@@ -7,7 +7,7 @@ import (
 
 func main() {
 	port := 8080
-	s := service.NewService()
+	s := service.New()
 	s.Start(port)
 }
 

@@ -3,83 +3,96 @@ package akhttp
 import (
 	"strings"
 	"net/url"
+	"errors"
 )
 
-type Request struct {
+type AKRequest struct {
 	path string
 	method string
-	protocol string
-	// query map[string]string
+	version string
 	query map[string]string
-	field map[string]string
+	header map[string]string
+	body map[string]string
 }
 
-func MakeRequest(buf []byte) Request {
-	requestLines := readLines(buf)
-	
-	requestFstLine := strings.Split(requestLines[0], " ")
-	method := requestFstLine[0]
-	protocol := requestFstLine[2]
-	decodedURLString := strings.Split(urlDecode(requestFstLine[1]), "?")
-	reqPath := decodedURLString[0]
-	query := map[string]string{}
-	if len(decodedURLString) > 1 {
-		querys := strings.Split(decodedURLString[1], "&")
-		for i := 0; i < len(querys); i++ {
-			key, value := parseKeyValue(querys[i], "=")
-			query[key] = value
+func NewRequest() *AKRequest {
+	return &AKRequest{}
+}
+
+func NewRequestFromBytes(bytes []byte) *AKRequest {
+	requestLines := parseByteArray(bytes)
+	// 一行目は特殊
+	method, uri, httpVersion := parseStartLine(requestLines[0])
+	headerStrs, bodyStrs := sepHeaderBody(requestLines[1:])
+	path, queryStr := strings.Split(uri, "?")
+	querys := strings.Split(urlDecode(queryStr), "&") // 怪しい
+	return &AKRequest{
+		path: path,
+		method: method,
+		version: httpVersion,
+		query: makeMap(querys, "="),
+		header: makeMap(headerStrs, ":"),
+		body: makeMap(bodyStrs, ":"),
+	}
+}
+
+
+func parseStartLine(str string) (string, string, string) {
+	startLine := strings.Split(str, " ")
+	method := startLine[0]
+	uri := startLine[1]
+	httpVersion := startLine[2]
+	return method, uri, httpVersion
+}
+
+func sepHeaderBody(strs []string) ([]string, []string) {
+	var emptyLineIdx int
+	for i, str := range requestLines {
+		if len(str) == 0 {
+			emptyLineIdx = i
+			break
 		}
 	}
-
-	field := map[string]string{}
-	for _, word := range requestLines {
-		println(word)
-	}
-
-	for i := 1; i < len(requestLines); i++ {
-		key, value := parseKeyValue(requestLines[i], ": ")
-		field[key] = value
-	}
-	
-	return Request{
-		path: reqPath, 
-		method: method,
-		protocol: protocol,
-		field: field,
-		query: query,
-	}
+	headerStrs := requestLines[0:emptyLineIdx]
+	bodyStrs := requestLines[emptyLineIdx + 1:]
+	return headerStrs, bodyStrs
 }
 
-func ParseRequest([]byte) interface{} {
-	// 10が"\n", 0がnil
+func makeMap(strs []string, sep string) map[string]string {
+	m := map[string]string{}
+	for i, str := range strs {
+		k, v, err := parseKeyValue(str, sep)
+		if err == nil {
+			m[k] = v
+		}
+	}
+	return m
 }
 
 
-func readLines(bytes []byte) []string {
+// bodyは[]以降, なので[]stringの要素をlen(str) == 0 でチェックすべし
+func parseByteArray(bytes []byte) []string {
 	strSlice := make([]string, 0)
 	start := 0
-	for i := 0; bytes[i] != 0 ; i++ {
-		if bytes[i] == 10 {
-			// println(string(bytes[start:i]))
+	for i := 0; bytes[i] != 0 ; i++ { // 0(nil)だったら終わり
+		if bytes[i] == 10 { // \n(10)だったら次へ
 			strSlice = append(strSlice, string(bytes[start:i]))
 			start = i + 1
 		}
 	}
-	return strSlice
+	return strSlice	
 }
 
-func parseKeyValue(line string, with string) (string, string) {
-	strs := strings.Split(line, with)
+func parseKeyValue(line string, with string) (string, string, error) {
+	strs := strings.SplitN(line, with, 2)
 	if len(strs) < 2 {
-		return "", "" // fieldの最後に改行があるのでそれの対処. もっとちゃんとやるべき
+		return nil, nil, errors.New("can not split")
 	}
-	return strs[0], strs[1]
+	return strings.Trim(strs[0], " "), strings.Trim(strs[1], " "), nil
 }
-
 
 func urlDecode(query string) string {
 	str, _ := url.QueryUnescape(query)
 	println(str)
 	return str
-
 }
