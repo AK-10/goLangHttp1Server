@@ -12,7 +12,7 @@ type Messages []*myutil.Message
 func main() {
 	port := 8080
 
-	messages := myutil.Messages{}
+	messages := Messages{}
 	s := service.New()
 	
 	s.Get("/messages", func(req *akhttp.AKRequest, res *akhttp.AKResponse) {
@@ -27,7 +27,7 @@ func main() {
 		</head>
 		<body>
 		<h1>テスト掲示板</h1>
-		<form action="/message" method="post">
+		<form action="/messages" method="post">
 			ハンドル名: <input type="text" name="handle"></br>
 			<textarea name="message" cols="60" rows="4"></textarea><br/>
 			<input type="submit">
@@ -50,10 +50,10 @@ func main() {
 	})
 
 	s.Post("/messages", func(req *akhttp.AKRequest, res *akhttp.AKResponse) {
-		name := req.body["handle"]
-		msg := req.body["message"]
+		name := req.GetBody()["handle"]
+		msg := req.GetBody()["message"]
 		if name != "" && msg != "" {
-			append(messages, myutil.NewMessage(name. msg))
+			messages = append(messages, myutil.NewMessage(name, msg))
 		}
 		
 		out := `
@@ -67,7 +67,7 @@ func main() {
 		</head>
 		<body>
 		<h1>テスト掲示板</h1>
-		<form action="/message" method="post">
+		<form action="/messages" method="post">
 			ハンドル名: <input type="text" name="handle"></br>
 			<textarea name="message" cols="60" rows="4"></textarea><br/>
 			<input type="submit">
@@ -89,6 +89,9 @@ func main() {
 		res.Render(out)
 	})
 
+	for _, v := range s.GetHandle() {
+		v.PrintPM()
+	}
 	s.Start(port)
 
 	

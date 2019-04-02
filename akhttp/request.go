@@ -16,6 +16,15 @@ type AKRequest struct {
 	body map[string]string
 }
 
+func (req *AKRequest) Print() {
+	println(req.path)
+	println(req.method)
+	println(req.version)
+	println(req.query)
+	println(req.header)
+	println(req.body)
+}
+
 func NewRequest() *AKRequest {
 	return &AKRequest{}
 }
@@ -27,9 +36,9 @@ func NewRequestFromBytes(bytes []byte) *AKRequest {
 	headerStrs, bodyStrs := sepHeaderBody(requestLines[1:])
 	temp := strings.Split(uri, "?")
 
-	var path string
-	var queryStr string
-	var querys []string
+	// var path string
+	// var queryStr string
+	// var querys []string
 	switch len(temp) {
 	case 1:
 		path := temp[0]
@@ -58,12 +67,20 @@ func NewRequestFromBytes(bytes []byte) *AKRequest {
 	}
 }
 
-func (req *AKRequest) GetHttpVersion() string {
+func (req *AKRequest) GetHTTPVersion() string {
 	return req.version
 }
 
 func (req *AKRequest) GetPath() string {
 	return req.path
+}
+
+func (req *AKRequest) EqualMethodAndPath(method string, path string) bool {
+	return req.method == method && req.path == path 
+}
+
+func (req *AKRequest) GetBody() map[string]string {
+	return req.body
 }
 
 
@@ -90,7 +107,7 @@ func sepHeaderBody(strs []string) ([]string, []string) {
 
 func makeMap(strs []string, sep string) map[string]string {
 	m := map[string]string{}
-	for i, str := range strs {
+	for _, str := range strs {
 		k, v, err := parseKeyValue(str, sep)
 		if err == nil {
 			m[k] = v
