@@ -42,7 +42,7 @@ func NewResponse() *AKResponse {
 	if fileInfo.IsDir() {
 		body, _ := getHTML(documentDir + "/index.html")
 		location := "http://localhost:8080/index"
-		return Response {
+		return &AKResponse {
 			protocol: req.protocol,
 			status: 301,
 			message: "Moved Permanently",
@@ -88,7 +88,7 @@ func (res *AKResponse) SetHttpVersion(v string) {
 }
 
 func (res *AKResponse) MovedPermanently() {
-	
+
 }
 
 
