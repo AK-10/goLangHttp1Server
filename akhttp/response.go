@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"time"
 	"strings"
-	"path/filepath"
 	"io/ioutil"
 	"log"
 	"os"
@@ -14,7 +13,7 @@ type AKResponse struct {
 	httpVersion string
 	status int
 	message string
-	location *string
+	location string
 	body []byte
 	contentType string
 }
@@ -70,12 +69,39 @@ func NewResponse() *AKResponse {
 	}
 }
 
+func (res *AKResponse) BadRequest() {
+	res.contentType = "text/html"
+	res.status = 400
+	res.message = "bad request"
+	res.body = "<h1>bad request</h1>"
+}
 
-func (res *AKResponse) Render(viewPath string) {
+// rendering html
+func (res *AKResponse) Render(body string) {
 	basePath := "../views"
 	res.contentType = "text/html"
 	res.status = 200
 	res.message = "OK"
+	res.body = body
+}
+
+func (res *AKResponse) InternalServerError() {
+	res.contentType = "text/html"
+	res.status = 500
+	res.message = "Internal Server Error"
+	res.body = "<h1>Internal Server Error</h1>"
+}
+
+func (res *AKResponse) NotFound() {
+	res.contentType = "text/html"
+	res.status = 404
+	res.message = "NotFound"
+	res.body = "<h1>Not Found</h1>"
+}
+
+// rendering json
+func (res *AKResponse) JSON() {
+
 }
 
 // func (res *AKResponse) SetOK() {

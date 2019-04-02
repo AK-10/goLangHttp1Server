@@ -7,9 +7,8 @@ import (
 	"fmt"
 	"errors"
 	"../akhttp"
+	"path/filepath"
 )
-
-type Messages []*myutil.Message
 
 type Handle struct {
 	path string
@@ -18,14 +17,12 @@ type Handle struct {
 }
 
 type Service struct {
-	msgs Messages
 	handles []*Handle
 }
 
 
 func New() *Service {
 	return &Service{
-		msgs: Messages{},
 		handles: []*Handle{},
 	}
 }
@@ -91,8 +88,9 @@ func (s *Service) Start(port int) {
 			_, err := conn.Read(reqBuf)
 			req := akhttp.NewRequestFromBytes(reqBuf)
 			res := akhttp.NewResponse()
+
 			res.SetHttpVersion(req.GetHttpVersion())
-			
+
 			if err != nil {
 				res = s.InternalServerError()
 			} else {
@@ -100,15 +98,35 @@ func (s *Service) Start(port int) {
 				if err != nil {
 					res = s.NotFound()
 				}
-			}
+
+
+			// directory traversal検査 (http1serverより上にアクセスしているか検査)
+			// repo := filepath.Abs("../views")
+			// path := req.GetPath()
+			// absPath, err := filepath.Abs(repo + path)
+			// if err != nil {
+			// 	res.InternalServerError()
+			// }
+			// if strings.HasPrefix(absPath, repo) {
+			// 	res.BadRequest()
+			// }
+
+			// // 301検査
+			// fileInfo, err := os.Stat(absPath)
+			// if err != nil {
+			// 	res.InternalServerError()
+			// }
+			// if fileInfo.IsDir() {
+			// 	res.MovedParmanently()
+			// }
 
 			conn.Write(res.ToByteArray())
 			conn.Close()
 		} ()
 	}
-
 	// listen.Close()
 }
+
 
 
 

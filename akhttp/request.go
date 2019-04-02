@@ -62,6 +62,11 @@ func (req *AKRequest) GetHttpVersion() string {
 	return req.version
 }
 
+func (req *AKRequest) GetPath() string {
+	return req.path
+}
+
+
 func parseStartLine(str string) (string, string, string) {
 	startLine := strings.Split(str, " ")
 	method := startLine[0]
