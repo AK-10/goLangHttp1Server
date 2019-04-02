@@ -11,7 +11,7 @@ import (
 )
 
 type AKResponse struct {
-	protocol string
+	httpVersion string
 	status int
 	message string
 	location *string
@@ -60,7 +60,7 @@ func NewResponse() *AKResponse {
 	// locationはpath次第
 	// bodyは読み取ったファイルのstring <- 実はbyteで良いかも
 	// contentTypeはファイルの拡張子から
-	return &Response{
+	return &AKResponse{
 		protocol: req.protocol,
 		status: 200,
 		message: "OK",
@@ -70,23 +70,45 @@ func NewResponse() *AKResponse {
 	}
 }
 
-func (res *Response) ToByteArray() []byte {
+
+func (res *AKResponse) Render(viewPath string) {
+	basePath := "../views"
+	res.contentType = "text/html"
+	res.status = 200
+	res.message = "OK"
+}
+
+// func (res *AKResponse) SetOK() {
+// 	res.status = 200
+// 	res.message = "OK"
+// }
+
+func (res *AKResponse) SetHttpVersion(v string) {
+	res.httpVersion = v
+}
+
+func (res *AKResponse) MovedPermanently() {
+	
+}
+
+
+func (r *AKResponse) ToByteArray() []byte {
 	buf := make([]byte, 0)
-	fstLine := res.protocol + " " + strconv.Itoa(res.status) + " " + res.message + "\r\n"
+	fstLine := r.protocol + " " + strconv.Itoa(res.status) + " " + r.message + "\r\n"
 	buf = append(buf, []byte(fstLine)...)
 	// 2006年1月2日15時4分5秒 フォーマットの例文
 	buf = append(buf, []byte("Date: " + time.Now().Format("Mon, 2 Jan 2006 15:04:05 GMT") + "\r\n")...)
 	buf = append(buf, []byte("Server: GolangServer\r\n")...)
 	buf = append(buf, []byte("Connection: close\r\n")...)
-	buf = append(buf, []byte("Content-Type:" + res.contentType + "\r\n")...)
+	buf = append(buf, []byte("Content-Type:" + r.contentType + "\r\n")...)
 	
 	if res.status == 301 && &res.location != nil {
-		buf = append(buf, []byte("Location: " + *(res.location) + "\r\n")...)
+		buf = append(buf, []byte("Location: " + *(r.location) + "\r\n")...)
 	}
 
 	buf = append(buf, []byte("\r\n")...)
 	// println(string(res.body))
-	buf = append(buf, res.body...)
+	buf = append(buf, r.body...)
 
 	return buf
 }

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"net/url"
 	"errors"
+	"log"
 )
 
 type AKRequest struct {
@@ -24,18 +25,42 @@ func NewRequestFromBytes(bytes []byte) *AKRequest {
 	// 一行目は特殊
 	method, uri, httpVersion := parseStartLine(requestLines[0])
 	headerStrs, bodyStrs := sepHeaderBody(requestLines[1:])
-	path, queryStr := strings.Split(uri, "?")
-	querys := strings.Split(urlDecode(queryStr), "&") // 怪しい
-	return &AKRequest{
-		path: path,
-		method: method,
-		version: httpVersion,
-		query: makeMap(querys, "="),
-		header: makeMap(headerStrs, ":"),
-		body: makeMap(bodyStrs, ":"),
+	temp := strings.Split(uri, "?")
+
+	var path string
+	var queryStr string
+	var querys []string
+	switch len(temp) {
+	case 1:
+		path := temp[0]
+		return &AKRequest{
+			path: path,
+			method: method,
+			version: httpVersion,
+			header: makeMap(headerStrs, ":"),
+			body: makeMap(bodyStrs, ":"),
+		}
+	case 2:
+		path, queryStr := temp[0], temp[1]
+		querys := strings.Split(urlDecode(queryStr), "&") // 怪しい
+		return &AKRequest{
+			path: path,
+			method: method,
+			version: httpVersion,
+			query: makeMap(querys, "="),
+			header: makeMap(headerStrs, ":"),
+			body: makeMap(bodyStrs, ":"),
+		}
+	default:
+		log.Fatal("invalid request. no uri.")
+		// errors.New("invalid request. no uri.")
+		return &AKRequest{}
 	}
 }
 
+func (req *AKRequest) GetHttpVersion() string {
+	return req.version
+}
 
 func parseStartLine(str string) (string, string, string) {
 	startLine := strings.Split(str, " ")
@@ -47,14 +72,14 @@ func parseStartLine(str string) (string, string, string) {
 
 func sepHeaderBody(strs []string) ([]string, []string) {
 	var emptyLineIdx int
-	for i, str := range requestLines {
+	for i, str := range strs {
 		if len(str) == 0 {
 			emptyLineIdx = i
 			break
 		}
 	}
-	headerStrs := requestLines[0:emptyLineIdx]
-	bodyStrs := requestLines[emptyLineIdx + 1:]
+	headerStrs := strs[0:emptyLineIdx]
+	bodyStrs := strs[emptyLineIdx + 1:]
 	return headerStrs, bodyStrs
 }
 
@@ -80,13 +105,13 @@ func parseByteArray(bytes []byte) []string {
 			start = i + 1
 		}
 	}
-	return strSlice	
+	return strSlice
 }
 
 func parseKeyValue(line string, with string) (string, string, error) {
 	strs := strings.SplitN(line, with, 2)
 	if len(strs) < 2 {
-		return nil, nil, errors.New("can not split")
+		return "", "", errors.New("can not split")
 	}
 	return strings.Trim(strs[0], " "), strings.Trim(strs[1], " "), nil
 }

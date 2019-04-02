@@ -6,6 +6,7 @@ import (
 	"net"
 	"fmt"
 	"errors"
+	"../akhttp"
 )
 
 type Messages []*myutil.Message
@@ -29,7 +30,7 @@ func New() *Service {
 	}
 }
 
-func (s *Service) Get(path string, process func(interface{}, interface{})) {
+func (s *Service) Get(path string, process func(req *akhttp.AKRequest, res *akhttp.AKRequest)) {
 	h := &Handle{
 		path: path,
 		method: "GET",
@@ -38,7 +39,7 @@ func (s *Service) Get(path string, process func(interface{}, interface{})) {
 	s.handles = append(s.handles, h)
 }
 
-func (s *Service) Post(path string, process func(interface{}, interface{})) {
+func (s *Service) Post(path string, process func(req *akhttp.AKRequest, res *akhttp.AKRequest)) {
 	h := &Handle{
 		path: path,
 		method: "POST",
@@ -47,24 +48,19 @@ func (s *Service) Post(path string, process func(interface{}, interface{})) {
 	s.handles = append(s.handles, h)
 }
 
-func (s *Service) NotFound() interface{} {
+func (s *Service) NotFound() *akhttp.AKResponse {
 	return nil
 }
 
-func (s *Service) InternalServerError() interface{} {
+func (s *Service) InternalServerError() *akhttp.AKResponse {
 	return nil
 }
 
 
-func (s *Service) handling(req interface{}, res interface{}) error {
-	// parse request byte array
-
-	// 
-	reqMethod := "GET"
-	reqPath := "/index"
+func (s *Service) handling(req *akhttp.AKRequest, res *akhttp.AKRequest) error {
 	flag := false
 	for _, h := range s.handles {
-		if h.method == reqMethod && h.path == reqPath {
+		if h.method == req.method && h.path == req.path {
 			h.process(req, res)
 			flag := true
 		}
@@ -91,17 +87,22 @@ func (s *Service) Start(port int) {
 		go func() {
 			println("connection established\n")
 
-			reqBuf := make([]byte, 1024 * 100) // 100KB
+			reqBuf := make([]byte, 1024 * 100) // 100KBのrequestBuffer
 			_, err := conn.Read(reqBuf)
-			if err != nil {
-				s.InternalServerError()
-			}
-			// ここでrequestとresponseとなるインスタンスを生成．
+			req := akhttp.NewRequestFromBytes(reqBuf)
+			res := akhttp.NewResponse()
+			res.SetHttpVersion(req.GetHttpVersion())
 			
-			err = s.handling(req, res) // ここでのerrはnot foundであるということ
 			if err != nil {
-				s.NotFound()
+				res = s.InternalServerError()
+			} else {
+				err = s.handling(&req, &res) // ここでのerrはnot foundを意味する
+				if err != nil {
+					res = s.NotFound()
+				}
 			}
+
+			conn.Write(res.ToByteArray())
 			conn.Close()
 		} ()
 	}
