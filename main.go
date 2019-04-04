@@ -4,6 +4,7 @@ import (
 	"./service"
 	"./akhttp"
 	"./myutil"
+	// "sync"
 )
 
 
@@ -13,6 +14,8 @@ func main() {
 	port := 8080
 
 	messages := Messages{}
+	// mutex := &sync.Mutex{}
+
 	s := service.New()
 	
 	s.Get("/messages", func(req *akhttp.AKRequest, res *akhttp.AKResponse) {
@@ -50,9 +53,14 @@ func main() {
 	})
 
 	s.Post("/messages", func(req *akhttp.AKRequest, res *akhttp.AKResponse) {
+		// mutex.Lock()
+		println("---------req-----------")
+		req.Print()
+		println("-----------------------")
 		name := req.GetBody()["handle"]
 		msg := req.GetBody()["message"]
 		if name != "" && msg != "" {
+			println("ok!")
 			messages = append(messages, myutil.NewMessage(name, msg))
 		}
 		
@@ -86,11 +94,13 @@ func main() {
 		</body>
 		</html>
 		`
+
 		res.Render(out)
+		// mutex.Unlock()
 	})
 
 	for _, v := range s.GetHandle() {
-		v.PrintPM()
+		v.PrintPM();
 	}
 	s.Start(port)
 

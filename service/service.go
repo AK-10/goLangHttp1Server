@@ -7,9 +7,9 @@ import (
 	"fmt"
 	// "errors"
 	"../akhttp"
-	"path/filepath"
-	"strings"
-	"os"
+	// "path/filepath"
+	// "strings"
+	// "os"
 	"strconv"
 )
 
@@ -68,34 +68,35 @@ func (s *Service) handling(req *akhttp.AKRequest, res *akhttp.AKResponse) {
 		}
 	}
 	res.NotFound()
-	return 
+	return
+	
 	// if !flag {
 	// 	res.NotFound()
 	// 	return
 	// }
 	// directory traversal検査 (http1serverより上にアクセスしているか検査)
-	repo, err := filepath.Abs("../views")
-	path := req.GetPath()
-	absPath, err := filepath.Abs(repo + path)
-	if err != nil {
-		res.InternalServerError()
-		return
-	}
-	if strings.HasPrefix(absPath, repo) {
-		res.BadRequest()
-		return
-	}
+	// repo, err := filepath.Abs("../views")
+	// path := req.GetPath()
+	// absPath, err := filepath.Abs(repo + path)
+	// if err != nil {
+	// 	res.InternalServerError()
+	// 	return
+	// }
+	// if strings.HasPrefix(absPath, repo) {
+	// 	res.BadRequest()
+	// 	return
+	// }
 
-	// 301検査
-	fileInfo, err := os.Stat(absPath)
-	if err != nil {
-		res.InternalServerError()
-		return
-	}
-	if fileInfo.IsDir() {
-		res.MovedPermanently()
-		return
-	}
+	// // 301検査
+	// fileInfo, err := os.Stat(absPath)
+	// if err != nil {
+	// 	res.InternalServerError()
+	// 	return
+	// }
+	// if fileInfo.IsDir() {
+	// 	res.MovedPermanently()
+	// 	return
+	// }
 }
 
 func (s *Service) Start(port int) {
@@ -116,10 +117,9 @@ func (s *Service) Start(port int) {
 		go func() {
 			println("connection established\n")
 
-			reqBuf := make([]byte, 1024 * 100) // 100KBのrequestBuffer
+			reqBuf := make([]byte, 1024 * 10) // 100KBのrequestBuffer
 			_, err := conn.Read(reqBuf)
 			req := akhttp.NewRequestFromBytes(reqBuf)
-			req.Print()
 			res := akhttp.NewResponse()
 
 			res.SetHttpVersion(req.GetHTTPVersion())
@@ -133,5 +133,6 @@ func (s *Service) Start(port int) {
 			conn.Close()
 		} ()
 	}
+
 	// listen.Close()
 }

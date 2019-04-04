@@ -20,9 +20,15 @@ func (req *AKRequest) Print() {
 	println(req.path)
 	println(req.method)
 	println(req.version)
-	println(req.query)
-	println(req.header)
-	println(req.body)
+	for k, v := range req.query {
+		println(k, v)
+	}
+	for k, v := range req.header {
+		println(k, v)
+	}
+	for k, v := range req.header {
+		println(k, v)
+	}
 }
 
 func NewRequest() *AKRequest {
@@ -31,9 +37,17 @@ func NewRequest() *AKRequest {
 
 func NewRequestFromBytes(bytes []byte) *AKRequest {
 	requestLines := parseByteArray(bytes)
+	// for _, line := range requestLines {
+	// 	println(line)
+	// 	println(len(line))
+	// } 
+	
 	// 一行目は特殊
 	method, uri, httpVersion := parseStartLine(requestLines[0])
 	headerStrs, bodyStrs := sepHeaderBody(requestLines[1:])
+	
+
+	println(method)
 	temp := strings.Split(uri, "?")
 
 	// var path string
@@ -47,7 +61,7 @@ func NewRequestFromBytes(bytes []byte) *AKRequest {
 			method: method,
 			version: httpVersion,
 			header: makeMap(headerStrs, ":"),
-			body: makeMap(bodyStrs, ":"),
+			body: makeMap(bodyStrs, "="),
 		}
 	case 2:
 		path, queryStr := temp[0], temp[1]
@@ -58,7 +72,7 @@ func NewRequestFromBytes(bytes []byte) *AKRequest {
 			version: httpVersion,
 			query: makeMap(querys, "="),
 			header: makeMap(headerStrs, ":"),
-			body: makeMap(bodyStrs, ":"),
+			body: makeMap(bodyStrs, "="),
 		}
 	default:
 		log.Fatal("invalid request. no uri.")
@@ -66,6 +80,7 @@ func NewRequestFromBytes(bytes []byte) *AKRequest {
 		return &AKRequest{}
 	}
 }
+
 
 func (req *AKRequest) GetHTTPVersion() string {
 	return req.version
@@ -95,14 +110,15 @@ func parseStartLine(str string) (string, string, string) {
 func sepHeaderBody(strs []string) ([]string, []string) {
 	var emptyLineIdx int
 	for i, str := range strs {
-		if len(str) == 0 {
+		if str == "\r" {
 			emptyLineIdx = i
 			break
 		}
 	}
-	headerStrs := strs[0:emptyLineIdx]
-	bodyStrs := strs[emptyLineIdx + 1:]
-	return headerStrs, bodyStrs
+	headerStrs := strs[:emptyLineIdx]
+	bodyStr := strs[emptyLineIdx + 1:][0]
+
+	return headerStrs, strings.Split(bodyStr, "&")
 }
 
 func makeMap(strs []string, sep string) map[string]string {
@@ -116,17 +132,21 @@ func makeMap(strs []string, sep string) map[string]string {
 	return m
 }
 
-
-// bodyは[]以降, なので[]stringの要素をlen(str) == 0 でチェックすべし
 func parseByteArray(bytes []byte) []string {
 	strSlice := make([]string, 0)
 	start := 0
-	for i := 0; bytes[i] != 0 ; i++ { // 0(nil)だったら終わり
+	for i := 0; i < len(bytes) ; i++ {
 		if bytes[i] == 10 { // \n(10)だったら次へ
 			strSlice = append(strSlice, string(bytes[start:i]))
+			// println(string(bytes[start:i]))
 			start = i + 1
+		} 
+		if bytes[i] == 0 {
+			strSlice = append(strSlice, string(bytes[start:i]))
+			break
 		}
 	}
+
 	return strSlice
 }
 
