@@ -3,79 +3,163 @@ package akhttp
 import (
 	"strings"
 	"net/url"
+	"errors"
+	"log"
 )
 
-type Request struct {
+type AKRequest struct {
 	path string
 	method string
-	protocol string
-	// query map[string]string
+	version string
 	query map[string]string
-	field map[string]string
+	header map[string]string
+	body map[string]string
 }
 
-func MakeRequest(buf []byte) Request {
-	requestLines := readLines(buf)
+func (req *AKRequest) Print() {
+	println(req.path)
+	println(req.method)
+	println(req.version)
+	for k, v := range req.query {
+		println(k, v)
+	}
+	for k, v := range req.header {
+		println(k, v)
+	}
+	for k, v := range req.header {
+		println(k, v)
+	}
+}
+
+func NewRequest() *AKRequest {
+	return &AKRequest{}
+}
+
+func NewRequestFromBytes(bytes []byte) *AKRequest {
+	requestLines := parseByteArray(bytes)
+	// for _, line := range requestLines {
+	// 	println(line)
+	// 	println(len(line))
+	// } 
 	
-	requestFstLine := strings.Split(requestLines[0], " ")
-	method := requestFstLine[0]
-	protocol := requestFstLine[2]
-	decodedURLString := strings.Split(urlDecode(requestFstLine[1]), "?")
-	reqPath := decodedURLString[0]
-	query := map[string]string{}
-	if len(decodedURLString) > 1 {
-		querys := strings.Split(decodedURLString[1], "&")
-		for i := 0; i < len(querys); i++ {
-			key, value := parseKeyValue(querys[i], "=")
-			query[key] = value
+	// 一行目は特殊
+	method, uri, httpVersion := parseStartLine(requestLines[0])
+	headerStrs, bodyStrs := sepHeaderBody(requestLines[1:])
+	
+
+	println(method)
+	temp := strings.Split(uri, "?")
+
+	// var path string
+	// var queryStr string
+	// var querys []string
+	switch len(temp) {
+	case 1:
+		path := temp[0]
+		return &AKRequest{
+			path: path,
+			method: method,
+			version: httpVersion,
+			header: makeMap(headerStrs, ":"),
+			body: makeMap(bodyStrs, "="),
+		}
+	case 2:
+		path, queryStr := temp[0], temp[1]
+		querys := strings.Split(urlDecode(queryStr), "&") // 怪しい
+		return &AKRequest{
+			path: path,
+			method: method,
+			version: httpVersion,
+			query: makeMap(querys, "="),
+			header: makeMap(headerStrs, ":"),
+			body: makeMap(bodyStrs, "="),
+		}
+	default:
+		log.Fatal("invalid request. no uri.")
+		// errors.New("invalid request. no uri.")
+		return &AKRequest{}
+	}
+}
+
+
+func (req *AKRequest) GetHTTPVersion() string {
+	return req.version
+}
+
+func (req *AKRequest) GetPath() string {
+	return req.path
+}
+
+func (req *AKRequest) EqualMethodAndPath(method string, path string) bool {
+	return req.method == method && req.path == path 
+}
+
+func (req *AKRequest) GetBody() map[string]string {
+	return req.body
+}
+
+
+func parseStartLine(str string) (string, string, string) {
+	startLine := strings.Split(str, " ")
+	method := startLine[0]
+	uri := startLine[1]
+	httpVersion := startLine[2]
+	return method, uri, httpVersion
+}
+
+func sepHeaderBody(strs []string) ([]string, []string) {
+	var emptyLineIdx int
+	for i, str := range strs {
+		if str == "\r" {
+			emptyLineIdx = i
+			break
 		}
 	}
+	headerStrs := strs[:emptyLineIdx]
+	bodyStr := strs[emptyLineIdx + 1:][0]
 
-	field := map[string]string{}
-	for _, word := range requestLines {
-		println(word)
-	}
-
-	for i := 1; i < len(requestLines); i++ {
-		key, value := parseKeyValue(requestLines[i], ": ")
-		field[key] = value
-	}
-	
-	return Request{
-		path: reqPath, 
-		method: method,
-		protocol: protocol,
-		field: field,
-		query: query,
-	}
+	return headerStrs, strings.Split(bodyStr, "&")
 }
 
+func makeMap(strs []string, sep string) map[string]string {
+	m := map[string]string{}
+	for _, str := range strs {
+		k, v, err := parseKeyValue(str, sep)
+		if err == nil {
+			m[k] = v
+		}
+	}
+	return m
+}
 
-func readLines(bytes []byte) []string {
+func parseByteArray(bytes []byte) []string {
 	strSlice := make([]string, 0)
 	start := 0
-	for i := 0; bytes[i] != 0 ; i++ {
-		if bytes[i] == 10 {
-			// println(string(bytes[start:i]))
+	for i := 0; i < len(bytes) ; i++ {
+		if bytes[i] == 10 { // \n(10)だったら次へ
 			strSlice = append(strSlice, string(bytes[start:i]))
+			// println(string(bytes[start:i]))
 			start = i + 1
+		} 
+		if bytes[i] == 0 {
+			strSlice = append(strSlice, string(bytes[start:i]))
+			break
 		}
 	}
+
 	return strSlice
 }
 
-func parseKeyValue(line string, with string) (string, string) {
-	strs := strings.Split(line, with)
+func parseKeyValue(line string, with string) (string, string, error) {
+	strs := strings.SplitN(line, with, 2)
 	if len(strs) < 2 {
-		return "", "" // fieldの最後に改行があるのでそれの対処. もっとちゃんとやるべき
+		return "", "", errors.New("can not split")
 	}
-	return strs[0], strs[1]
+	return strings.Trim(strs[0], " "), strings.Trim(strs[1], " "), nil
 }
-
 
 func urlDecode(query string) string {
 	str, _ := url.QueryUnescape(query)
 	println(str)
 	return str
-
 }

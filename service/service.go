@@ -1,131 +1,138 @@
 package service
 
 import (
-	"../myutil"
+	// "../myutil"
 	"log"
 	"net"
 	"fmt"
+	// "errors"
+	"../akhttp"
+	// "path/filepath"
+	// "strings"
+	// "os"
+	"strconv"
 )
-
-type Messages []*myutil.Message
 
 type Handle struct {
 	path string
 	method string
-	process func()
+	process func(*akhttp.AKRequest, *akhttp.AKResponse) // processでresponseを直接いじるような操作を書く.
+}
+
+func (h *Handle) PrintPM() {
+	println(h.path)
+	println(h.method)
 }
 
 type Service struct {
-	msgs Messages
 	handles []*Handle
 }
 
 
-func NewService() *Service {
+func New() *Service {
 	return &Service{
-		msgs: Messages{},
 		handles: []*Handle{},
 	}
 }
 
-func (s *Service) Get(path string, process func()) {
+func (s *Service) Get(path string, process func(req *akhttp.AKRequest, res *akhttp.AKResponse)) {
 	h := &Handle{
 		path: path,
-		method: "get",
-		process: process,
-	}
-	s.handles = append(s.handles, h)
-
-}
-
-func (s *Service) Post(path string, process func()) {
-	h := &Handle{
-		path: path,
-		method: "post",
+		method: "GET",
 		process: process,
 	}
 	s.handles = append(s.handles, h)
 }
 
-func (s *Service) handling([]byte) {
-	// parse request byte array
+func (s *Service) GetHandle() []*Handle {
+	return s.handles
+}
 
-	// 
-	reqMethod := "get"
-	reqPath := "/post"
+func (s *Service) Post(path string, process func(req *akhttp.AKRequest, res *akhttp.AKResponse)) {
+	h := &Handle{
+		path: path,
+		method: "POST",
+		process: process,
+	}
+	s.handles = append(s.handles, h)
+}
+
+
+func (s *Service) handling(req *akhttp.AKRequest, res *akhttp.AKResponse) {
+	// flag := false
 	for _, h := range s.handles {
-		if h.method == reqMethod && h.path == reqPath {
-			h.process()
+		if req.EqualMethodAndPath(h.method, h.path) {
+			h.process(req, res)
+			// flag = true
+			return
 		}
 	}
+	res.NotFound()
+	return
+	
+	// if !flag {
+	// 	res.NotFound()
+	// 	return
+	// }
+	// directory traversal検査 (http1serverより上にアクセスしているか検査)
+	// repo, err := filepath.Abs("../views")
+	// path := req.GetPath()
+	// absPath, err := filepath.Abs(repo + path)
+	// if err != nil {
+	// 	res.InternalServerError()
+	// 	return
+	// }
+	// if strings.HasPrefix(absPath, repo) {
+	// 	res.BadRequest()
+	// 	return
+	// }
+
+	// // 301検査
+	// fileInfo, err := os.Stat(absPath)
+	// if err != nil {
+	// 	res.InternalServerError()
+	// 	return
+	// }
+	// if fileInfo.IsDir() {
+	// 	res.MovedPermanently()
+	// 	return
+	// }
 }
 
 func (s *Service) Start(port int) {
-	listen, err := net.Listen("tcp", ":" + string(port))
+	portString := ":" + strconv.Itoa(port)
+	listen, err := net.Listen("tcp", portString)
 	if err != nil {
-		log.Fatal("can not listen at ", port)
+		println("can not listen at ", port, err)
+		log.Fatal(err)
 	}
+
+	fmt.Println("listening ", port)
 	for {
 		// success 3way hand shake.
 		conn, err := listen.Accept()
 		if err != nil {
 			log.Fatal("cant not established connection.")
 		}
-		fmt.Println("listening ", port)
 		go func() {
 			println("connection established\n")
 
-			reqBuf := make([]byte, 8196)
+			reqBuf := make([]byte, 1024 * 10) // 100KBのrequestBuffer
 			_, err := conn.Read(reqBuf)
+			req := akhttp.NewRequestFromBytes(reqBuf)
+			res := akhttp.NewResponse()
+
+			res.SetHttpVersion(req.GetHTTPVersion())
+
 			if err != nil {
-				s.handling(reqBuf)
+				res.InternalServerError()
+			} else {
+				s.handling(req, res) // ここでのerrはnot foundを意味する
 			}
+			conn.Write(res.ToByteArray())
+			conn.Close()
 		} ()
 	}
 
-	listen.Close()
+	// listen.Close()
 }
-
-func (s *Service) DoGet() {
-	// something
-	// contenttype := "text/html;charset=UTF-8"
-	out := `
-	<!DOCTYPE html>
-	<html lang="en">
-	<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta http-equiv="X-UA-Compatible" content="ie=edge">
-	<title>Document</title>
-	</head>
-	<body>
-	<h1>テスト掲示板</h1>
-	<form action="/message" method="post">
-		ハンドル名: <input type="text" name="handle"></br>
-		<textarea name="message" cols="60" rows="4"></textarea><br/>
-		<input type="submit">
-	</form>
-	<hr/>
-	<!-- messageList ↓ -->
-	<ul>
-	`
-
-	for _, msg := range s.msgs {
-		out += "<li>" + msg.Handle + " : " + msg.Value + "</li>\n"
-	}
-
-	out += `
-	</ul>
-	</body>
-	</html>
-	`
-}
-
-// func (s *Service) DoPost(req AKRequest, res AKResponse) {
-// 	// something
-// 	req.setCharacterEncoding("UTF-8")
-// 	handle := req.getParameter("handle")
-// 	m := req.getParameter("message")
-// 	message := myutil.NewMessage(handle, m)
-// 	append(s.msgs, message)
-// }

@@ -2,13 +2,109 @@ package main
 
 import (
 	"./service"
-	// "./akhttp"
+	"./akhttp"
+	"./myutil"
+	// "sync"
 )
+
+
+type Messages []*myutil.Message
 
 func main() {
 	port := 8080
-	s := service.NewService()
+
+	messages := Messages{}
+	// mutex := &sync.Mutex{}
+
+	s := service.New()
+	
+	s.Get("/messages", func(req *akhttp.AKRequest, res *akhttp.AKResponse) {
+			out := `
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+		<title>Document</title>
+		</head>
+		<body>
+		<h1>テスト掲示板</h1>
+		<form action="/messages" method="post">
+			ハンドル名: <input type="text" name="handle"></br>
+			<textarea name="message" cols="60" rows="4"></textarea><br/>
+			<input type="submit">
+		</form>
+		<hr/>
+		<!-- messageList ↓ -->
+		<ul>
+		`
+
+		for _, msg := range messages {
+			out += "<li>" + msg.Handle + " : " + msg.Value + "</li>\n"
+		}
+
+		out += `
+		</ul>
+		</body>
+		</html>
+		`
+		res.Render(out)
+	})
+
+	s.Post("/messages", func(req *akhttp.AKRequest, res *akhttp.AKResponse) {
+		// mutex.Lock()
+		println("---------req-----------")
+		req.Print()
+		println("-----------------------")
+		name := req.GetBody()["handle"]
+		msg := req.GetBody()["message"]
+		if name != "" && msg != "" {
+			println("ok!")
+			messages = append(messages, myutil.NewMessage(name, msg))
+		}
+		
+		out := `
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+		<title>Document</title>
+		</head>
+		<body>
+		<h1>テスト掲示板</h1>
+		<form action="/messages" method="post">
+			ハンドル名: <input type="text" name="handle"></br>
+			<textarea name="message" cols="60" rows="4"></textarea><br/>
+			<input type="submit">
+		</form>
+		<hr/>
+		<!-- messageList ↓ -->
+		<ul>
+		`
+
+		for _, msg := range messages {
+			out += "<li>" + msg.Handle + " : " + msg.Value + "</li>\n"
+		}
+
+		out += `
+		</ul>
+		</body>
+		</html>
+		`
+
+		res.Render(out)
+		// mutex.Unlock()
+	})
+
+	for _, v := range s.GetHandle() {
+		v.PrintPM();
+	}
 	s.Start(port)
+
+	
 }
 
 // func main() {
