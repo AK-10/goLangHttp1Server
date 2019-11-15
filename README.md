@@ -16,3 +16,7 @@ dockerもおまけとして使う
 - 多分複数のリクエストを捌けない(goroutine 使えば良い？)
 - post, put, delete
 - cookie
+
+
+## refrences
+- http://kmaebashi.com/programmer/webserver/
